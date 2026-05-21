@@ -39,6 +39,11 @@ const router = createRouter({
       component: () => import("../pages/Workflow.vue"),
     },
     {
+      path: "/case-generate",
+      name: "case-generate",
+      component: () => import("../pages/CaseGenerate.vue"),
+    },
+    {
       path: "/history",
       name: "history",
       component: () => import("../pages/History.vue"),

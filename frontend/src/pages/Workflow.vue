@@ -1,22 +1,22 @@
 <template>
   <div class="workflow-page">
     <h1>🔀 智能体工作流可视化</h1>
-    <p class="subtitle">LangGraph 多智能体协同工作流 — 当前已实现的核心流程</p>
+    <p class="subtitle">LangGraph 7 节点多智能体协同工作流 — RAG + MCP + 生成 + 验证</p>
 
-    <!-- 已实现的工作流 -->
+    <!-- 主工作流 -->
     <section class="wf-section">
-      <h2>已实现：法律研究工作流</h2>
+      <h2>法律研究 7 节点工作流</h2>
       <div class="wf-diagram">
-        <div class="wf-node" v-for="(node, i) in implementedFlow" :key="node.id">
+        <div class="wf-node" v-for="(node, i) in fullFlow" :key="node.id">
           <div class="wf-node-card" :class="node.status">
             <span class="wf-node-icon">{{ node.icon }}</span>
             <strong>{{ node.label }}</strong>
             <p>{{ node.desc }}</p>
             <div class="wf-node-badge" :class="node.status">
-              {{ node.status === "active" ? "已实现" : "" }}
+              {{ node.status === "active" ? "已实现" : "计划中" }}
             </div>
           </div>
-          <div class="wf-edge" v-if="i < implementedFlow.length - 1">
+          <div class="wf-edge" v-if="i < fullFlow.length - 1">
             <span class="edge-arrow">↓</span>
             <span class="edge-label">{{ node.nextLabel }}</span>
           </div>
@@ -24,49 +24,9 @@
       </div>
     </section>
 
-    <!-- 计划中的工作流 -->
+    <!-- 节点详情 -->
     <section class="wf-section">
-      <h2>规划中：完整智能体工作流 (开发中)</h2>
-      <div class="wf-diagram wf-future">
-        <div class="wf-row">
-          <div class="wf-node future">
-            <div class="wf-node-card future-card">
-              <span class="wf-node-icon">📋</span>
-              <strong>案例解析</strong>
-              <p>BERT + NER 实体抽取</p>
-            </div>
-          </div>
-          <span class="row-arrow">→</span>
-          <div class="wf-node future">
-            <div class="wf-node-card future-card">
-              <span class="wf-node-icon">📜</span>
-              <strong>法规检索</strong>
-              <p>向量库 + RAG</p>
-            </div>
-          </div>
-          <span class="row-arrow">→</span>
-          <div class="wf-node future">
-            <div class="wf-node-card future-card">
-              <span class="wf-node-icon">⚖️</span>
-              <strong>合规审查</strong>
-              <p>违规检测 + 事实校验</p>
-            </div>
-          </div>
-          <span class="row-arrow">→</span>
-          <div class="wf-node future">
-            <div class="wf-node-card future-card">
-              <span class="wf-node-icon">📄</span>
-              <strong>报告生成</strong>
-              <p>结构化法律文书</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 执行日志（模拟） -->
-    <section class="wf-section">
-      <h2>节点说明</h2>
+      <h2>节点详情</h2>
       <div class="node-detail-grid">
         <div class="node-detail" v-for="node in nodeDetails" :key="node.id">
           <h3>{{ node.icon }} {{ node.name }}</h3>
@@ -78,8 +38,20 @@
             <span class="io-label">输出:</span> {{ node.output }}
           </div>
           <span class="tag" :class="node.status === 'active' ? 'tag-done' : 'tag-wip'">
-            {{ node.status === "active" ? "已实现" : "开发中" }}
+            {{ node.status === "active" ? "已实现" : "计划中" }}
           </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 技术栈 -->
+    <section class="wf-section">
+      <h2>RAG + MCP 技术栈</h2>
+      <div class="tech-grid">
+        <div class="tech-card" v-for="tech in techStack" :key="tech.name">
+          <span class="tech-icon">{{ tech.icon }}</span>
+          <strong>{{ tech.name }}</strong>
+          <p>{{ tech.desc }}</p>
         </div>
       </div>
     </section>
@@ -87,50 +59,75 @@
 </template>
 
 <script lang="ts" setup>
-const implementedFlow = [
-  { id: "plan", label: "研究规划", icon: "📝", desc: "拆解主题为 3-5 个待办任务", status: "active", nextLabel: "任务清单" },
-  { id: "search", label: "信息检索", icon: "🔍", desc: "Tavily / DuckDuckGo 多源搜索", status: "active", nextLabel: "检索结果" },
-  { id: "summarize", label: "任务总结", icon: "📊", desc: "LLM 整合每个任务的关键发现", status: "active", nextLabel: "任务总结" },
-  { id: "report", label: "报告生成", icon: "📄", desc: "结构化 Markdown 研究报告", status: "active", nextLabel: "" },
+const fullFlow = [
+  { id: "case_parse", label: "案例解析", icon: "📋", desc: "NER 实体抽取 + 结构化", status: "active", nextLabel: "结构化案例" },
+  { id: "plan", label: "研究规划", icon: "📝", desc: "拆解主题为待办任务", status: "active", nextLabel: "任务清单" },
+  { id: "search", label: "信息检索", icon: "🔍", desc: "Tavily 多源网络搜索", status: "active", nextLabel: "检索结果" },
+  { id: "summarize", label: "任务总结", icon: "📊", desc: "LLM 总结每个任务", status: "active", nextLabel: "任务总结" },
+  { id: "retrieve", label: "RAG 检索", icon: "🧠", desc: "向量 + 关键词检索法条案例", status: "active", nextLabel: "知识库上下文" },
+  { id: "generate", label: "生成代理", icon: "✍️", desc: "案由场景模版 + 分段生成", status: "active", nextLabel: "报告草稿" },
+  { id: "verify", label: "验证代理", icon: "✅", desc: "事实核查 + 法条校验 + 违规检测", status: "active", nextLabel: "验证结果" },
+  { id: "report", label: "报告整合", icon: "📄", desc: "整合生成结果与参考文献", status: "active", nextLabel: "" },
 ];
 
 const nodeDetails = [
   {
+    id: "case_parse", icon: "📋", name: "案例解析 (case_parse)", status: "active",
+    description: "接收法律案例文本，通过正则 + 关键词 + 可选 BERT NER 进行实体抽取，输出结构化案例信息并与知识库法条关联。",
+    input: "case_text (string)",
+    output: "parse_result: case_type, subjects, behaviors, related_laws, risk_tags",
+  },
+  {
     id: "plan", icon: "📝", name: "研究规划 (plan)", status: "active",
-    description: "接收研究主题，调用 LLM 将主题拆解为 3-5 个互补的研究任务，每个任务包含标题、意图和检索查询。",
-    input: "research_topic (string)",
-    output: "todo_items (list), 每个含 title / intent / query",
+    description: "接收研究主题，调用 LLM 将主题拆解为 3-5 个互补研究任务，每个任务包含标题、意图和检索查询。",
+    input: "research_topic",
+    output: "todo_items (3-5 个)",
   },
   {
     id: "search", icon: "🔍", name: "信息检索 (search_tasks)", status: "active",
-    description: "遍历每个任务，调用配置的搜索引擎 (Tavily/DuckDuckGo) 采集相关信息，去重并格式化来源。",
-    input: "todo_items (list)",
-    output: "web_research_results (list), sources_gathered (list)",
+    description: "遍历任务列表，调用 Tavily/DuckDuckGo 搜索引擎采集信息，去重并格式化来源。",
+    input: "todo_items",
+    output: "web_research_results, sources_gathered",
   },
   {
     id: "summarize", icon: "📊", name: "任务总结 (summarize_tasks)", status: "active",
-    description: "对每个任务的检索结果，调用 LLM 进行流式总结，提取关键信息并整合为结构化摘要。",
+    description: "对每个任务的检索结果，调用 LLM 进行流式总结，提取关键信息并整合。",
     input: "web_research_results, todo_items",
-    output: "每个任务的 summary + sources_summary",
+    output: "task.summary, task.sources_summary",
   },
   {
-    id: "report", icon: "📄", name: "报告生成 (generate_report)", status: "active",
-    description: "整合所有任务的总结与来源，调用 LLM 生成最终的结构化 Markdown 研究报告。",
-    input: "todo_items (含 summary), research_topic",
+    id: "retrieve", icon: "🧠", name: "RAG 检索 (retrieve)", status: "active",
+    description: "从 Sentence-BERT + FAISS 向量库中检索相关法条和案例，支持向量+关键词混合检索。回退到知识库关键词匹配。",
+    input: "research_topic, parse_result, sources_gathered",
+    output: "retrieved_laws, retrieved_cases, rag_context",
+  },
+  {
+    id: "generate", icon: "✍️", name: "生成代理 (generate)", status: "active",
+    description: "基于 RAG 上下文 + 网络检索结果，按案由场景模版分段生成：案件概述、法律分析、类案参考、风险评估、合规建议。",
+    input: "rag_context, web_research_results, parse_result",
+    output: "generation_result: report + validation",
+  },
+  {
+    id: "verify", icon: "✅", name: "验证代理 (verify)", status: "active",
+    description: "三项检查 — 法条有效性（引用真实性）、事实一致性（报告 vs 原文）、违法行为检测（关键词匹配）。输出评分和修正建议。",
+    input: "generated_report, original_case_text, retrieved_laws",
+    output: "verification_result: score, warnings, corrections",
+  },
+  {
+    id: "report", icon: "📄", name: "报告整合 (generate_report)", status: "active",
+    description: "整合各节点输出，构建参考文献章节，生成最终结构化 Markdown 法律研究报告。",
+    input: "generation_result, verification_result",
     output: "structured_report (markdown)",
   },
-  {
-    id: "case_parse", icon: "📋", name: "案例解析 (case_parse)", status: "wip",
-    description: "计划中：基于 BERT + NER 模型，对输入的法律案例文本进行实体抽取与结构化信息提取。",
-    input: "案例文本 / 文件",
-    output: "结构化案例信息 (涉事主体、金额、条文等)",
-  },
-  {
-    id: "compliance", icon: "⚖️", name: "合规审查 (compliance_review)", status: "wip",
-    description: "计划中：基于违规检测模型与事实校验引擎，判断案例合规性并输出风险等级与违规依据。",
-    input: "结构化案例 + 相关法条",
-    output: "审查结论、风险等级、违规点列表",
-  },
+];
+
+const techStack = [
+  { icon: "🧠", name: "Sentence-BERT", desc: "paraphrase-multilingual-MiniLM-L12-v2 中文语义向量 (384维)" },
+  { icon: "🔍", name: "FAISS", desc: "Facebook AI Similarity Search — 高效向量索引与最近邻检索" },
+  { icon: "🔧", name: "MCP 协议", desc: "Model Context Protocol — 工具标准化注册与调用" },
+  { icon: "📚", name: "RAG", desc: "Retrieval-Augmented Generation — 检索增强生成，提升法律引用准确性" },
+  { icon: "✅", name: "验证代理", desc: "法条真实性 + 事实一致性 + 违法行为检测三重校验" },
+  { icon: "🔗", name: "LangGraph", desc: "有向图状态机编排 7 节点多智能体协同工作流" },
 ];
 </script>
 
@@ -144,10 +141,9 @@ const nodeDetails = [
 
 /* 垂直流程图 */
 .wf-diagram { display: flex; flex-direction: column; align-items: center; gap: 0; }
-
 .wf-node { display: flex; flex-direction: column; align-items: center; }
 .wf-node-card {
-  width: 320px; padding: 18px 20px; background: #fff;
+  width: 340px; padding: 18px 20px; background: #fff;
   border: 1px solid rgba(148,163,184,0.12); border-radius: 14px;
   text-align: center; position: relative;
 }
@@ -161,12 +157,6 @@ const nodeDetails = [
 .wf-edge { display: flex; flex-direction: column; align-items: center; padding: 4px 0; }
 .edge-arrow { font-size: 20px; color: #c9a84c; }
 .edge-label { font-size: 11px; color: #94a3b8; }
-
-/* 横向流程图 */
-.wf-future { }
-.wf-row { display: flex; align-items: flex-start; gap: 8px; justify-content: center; flex-wrap: wrap; }
-.row-arrow { font-size: 22px; color: #94a3b8; padding-top: 30px; }
-.future-card { opacity: 0.55; }
 
 /* 节点详情网格 */
 .node-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -182,7 +172,17 @@ const nodeDetails = [
 .tag-done { background: rgba(34,197,94,0.1); color: #15803d; }
 .tag-wip { background: rgba(201,168,76,0.12); color: #8b7318; }
 
+/* 技术栈 */
+.tech-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.tech-card {
+  background: #fff; border: 1px solid rgba(148,163,184,0.12); border-radius: 14px;
+  padding: 18px; text-align: center;
+}
+.tech-icon { font-size: 32px; display: block; margin-bottom: 10px; }
+.tech-card strong { display: block; font-size: 14px; color: #1e3a5f; margin-bottom: 4px; }
+.tech-card p { margin: 0; font-size: 12px; color: #94a3b8; line-height: 1.4; }
+
 @media (max-width: 640px) {
-  .node-detail-grid { grid-template-columns: 1fr; }
+  .node-detail-grid, .tech-grid { grid-template-columns: 1fr; }
 }
 </style>

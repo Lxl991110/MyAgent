@@ -32,11 +32,12 @@
           </router-link>
           <router-link to="/regulation-search" class="nav-item" active-class="active">
             <span class="nav-icon">📜</span> 法规检索
-            <span class="badge badge-wip">开发中</span>
           </router-link>
           <router-link to="/compliance-review" class="nav-item" active-class="active">
             <span class="nav-icon">⚖️</span> 合规审查
-            <span class="badge badge-wip">开发中</span>
+          </router-link>
+          <router-link to="/case-generate" class="nav-item" active-class="active">
+            <span class="nav-icon">📝</span> 案例生成
           </router-link>
         </div>
 
@@ -44,7 +45,6 @@
           <span class="nav-label">其他</span>
           <router-link to="/history" class="nav-item" active-class="active">
             <span class="nav-icon">📁</span> 历史案例库
-            <span class="badge badge-wip">开发中</span>
           </router-link>
           <router-link to="/settings" class="nav-item" active-class="active">
             <span class="nav-icon">⚙️</span> 系统设置

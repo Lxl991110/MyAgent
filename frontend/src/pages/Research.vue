@@ -69,6 +69,27 @@
         </div>
       </div>
 
+      <!-- RAG 检索结果 & 验证 -->
+      <div v-if="ragLaws.length || ragCases.length || verification" class="rag-verify-bar" :class="{ highlight: ragFlash || verifyFlash }">
+        <div v-if="ragLaws.length" class="rag-chip" title="RAG 检索法条">
+          🧠 {{ ragLaws.length }} 条法条
+        </div>
+        <div v-if="ragCases.length" class="rag-chip" title="RAG 检索案例">
+          📂 {{ ragCases.length }} 个案例
+        </div>
+        <div v-if="verification" class="verify-chip" :class="verification.passed ? 'v-pass' : 'v-fail'">
+          {{ verification.passed ? '✅' : '⚠️' }} 验证 {{ verification.score }}分
+          <span v-if="verification.violations">| {{ verification.violations }} 风险点</span>
+        </div>
+      </div>
+
+      <!-- 验证警告 -->
+      <div v-if="verification?.warnings?.length" class="verify-warnings">
+        <div class="warning-item" v-for="(w, i) in verification.warnings" :key="i">
+          ⚠️ {{ w }}
+        </div>
+      </div>
+
       <!-- 主内容区：任务列表 + 任务详情 -->
       <div class="main-grid">
         <!-- 左侧任务列表 -->
@@ -193,6 +214,14 @@ const progressLogs = ref<string[]>([]);
 const sourcesFlash = ref(false);
 const summaryFlash = ref(false);
 const reportFlash = ref(false);
+const ragFlash = ref(false);
+const verifyFlash = ref(false);
+
+// RAG + 验证状态
+const ragLaws = ref<{ law_name: string; article: string; score: number }[]>([]);
+const ragCases = ref<{ case_id: string; case_type: string; score: number }[]>([]);
+const verification = ref<{ passed: boolean; score: number; violations: number; warnings: string[] } | null>(null);
+const genSections = ref<{ section: string; progress: string }[]>([]);
 
 let controller: AbortController | null = null;
 
@@ -286,6 +315,11 @@ function reset() {
   reportMarkdown.value = "";
   progressLogs.value = [];
   sourcesFlash.value = summaryFlash.value = reportFlash.value = false;
+  ragFlash.value = verifyFlash.value = false;
+  ragLaws.value = [];
+  ragCases.value = [];
+  verification.value = null;
+  genSections.value = [];
 }
 
 const handleSubmit = async () => {
@@ -373,6 +407,68 @@ const handleSubmit = async () => {
           if (!task) return;
           task.summary += typeof event.content === "string" ? event.content : "";
           if (activeTaskId.value === task.id) pulse(summaryFlash);
+          return;
+        }
+
+        // ── 案例解析结果 ──
+        if (event.type === "case_parse_result") {
+          const e = event as Record<string, unknown>;
+          progressLogs.value.push(
+            `案例解析: 案由=${e.case_type || "未知"}, 主体=${e.subjects || 0}个, 法条=${e.related_laws || 0}条`
+          );
+          return;
+        }
+
+        // ── RAG 检索结果 ──
+        if (event.type === "rag_retrieval") {
+          const e = event as Record<string, unknown>;
+          ragLaws.value = Array.isArray(e.top_laws) ? e.top_laws as any[] : [];
+          ragCases.value = Array.isArray(e.top_cases) ? e.top_cases as any[] : [];
+          pulse(ragFlash);
+          progressLogs.value.push(
+            `知识库检索: ${e.law_count || 0} 条法条, ${e.case_count || 0} 个案例`
+          );
+          return;
+        }
+
+        // ── 生成进度 ──
+        if (event.type === "generation_progress") {
+          const e = event as Record<string, unknown>;
+          const section = String(e.section || "");
+          const progress = String(e.progress || "");
+          genSections.value.push({ section, progress });
+          progressLogs.value.push(`生成中: ${section} (${progress})`);
+          return;
+        }
+
+        // ── 章节生成完成 ──
+        if (event.type === "section_generated") {
+          const e = event as Record<string, unknown>;
+          progressLogs.value.push(`章节完成: ${e.section || ""}`);
+          return;
+        }
+
+        // ── 生成校验 ──
+        if (event.type === "generation_validation") {
+          const e = event as Record<string, unknown>;
+          const valid = e.valid ? "通过" : "部分缺失";
+          progressLogs.value.push(`生成校验: ${valid}`);
+          return;
+        }
+
+        // ── 验证结果 ──
+        if (event.type === "verification_result") {
+          const e = event as Record<string, unknown>;
+          verification.value = {
+            passed: Boolean(e.passed),
+            score: Number(e.score) || 0,
+            violations: Number(e.violations) || 0,
+            warnings: Array.isArray(e.warnings) ? e.warnings as string[] : [],
+          };
+          pulse(verifyFlash);
+          progressLogs.value.push(
+            `报告验证: ${verification.value.passed ? "通过" : "未通过"} (${verification.value.score}分)`
+          );
           return;
         }
 
@@ -547,6 +643,31 @@ textarea:focus, select:focus { outline: none; border-color: #c9a84c; box-shadow:
 }
 .log-item { font-size: 13px; color: #475569; display: flex; align-items: center; gap: 8px; }
 .log-dot { width: 6px; height: 6px; border-radius: 50%; background: #c9a84c; flex-shrink: 0; }
+
+/* RAG + 验证栏 */
+.rag-verify-bar {
+  display: flex; gap: 10px; flex-wrap: wrap; padding: 10px 0;
+}
+.rag-chip, .verify-chip {
+  font-size: 12px; padding: 4px 12px; border-radius: 10px; font-weight: 500;
+}
+.rag-chip {
+  background: rgba(30,58,95,0.06); color: #1e3a5f;
+}
+.verify-chip.v-pass {
+  background: rgba(34,197,94,0.08); color: #15803d;
+}
+.verify-chip.v-fail {
+  background: rgba(220,38,38,0.06); color: #dc2626;
+}
+.verify-warnings {
+  display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;
+}
+.warning-item {
+  font-size: 12px; padding: 6px 12px; background: rgba(201,168,76,0.06);
+  border-left: 3px solid #c9a84c; border-radius: 0 8px 8px 0;
+  color: #8b7318;
+}
 
 /* 主内容网格 */
 .main-grid { display: grid; grid-template-columns: 260px 1fr; gap: 16px; align-items: start; }

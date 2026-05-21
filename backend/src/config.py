@@ -73,6 +73,32 @@ class Configuration(BaseModel):
         title="LLM Model ID",
         description="Optional model identifier for custom OpenAI-compatible services",
     )
+    # ── Qdrant 向量数据库 ──
+    qdrant_url: str = Field(
+        default="",
+        title="Qdrant URL",
+        description="Qdrant Cloud instance URL",
+    )
+    qdrant_api_key: str = Field(
+        default="",
+        title="Qdrant API Key",
+        description="Qdrant Cloud API key for authentication",
+    )
+    qdrant_vector_size: int = Field(
+        default=384,
+        title="Qdrant Vector Size",
+        description="Embedding vector dimension (must match the embedding model)",
+    )
+    qdrant_distance: str = Field(
+        default="cosine",
+        title="Qdrant Distance Metric",
+        description="Distance metric: cosine, euclid, or dot",
+    )
+    qdrant_timeout: int = Field(
+        default=30,
+        title="Qdrant Timeout",
+        description="Connection timeout in seconds",
+    )
 
     @classmethod
     def from_env(cls, overrides: Optional[dict[str, Any]] = None) -> "Configuration":
